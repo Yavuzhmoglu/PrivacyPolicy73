@@ -38,3 +38,78 @@ These terms and conditions are effective as of 2022-02-20
 **Contact Us**
 
 If you have any questions or suggestions about my Terms and Conditions, do not hesitate to contact me at justtouchinfo@gmail..com.
+
+
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using CsvHelper;
+
+namespace CsvToSqlWithoutEntityFramework
+{
+    // Data Transfer Object (DTO) sınıfı
+    public class CsvData
+    {
+        public int Id { get; set; }
+        public string Column1 { get; set; }
+        // Diğer kolonlar buraya eklenebilir...
+        public string Column33 { get; set; }
+    }
+
+    // Data Access Layer (DAL) sınıfı
+    public class CsvDataDal
+    {
+        private readonly string connectionString;
+
+        public CsvDataDal(string connectionString)
+        {
+            this.connectionString = connectionString;
+        }
+
+        public void InsertCsvData(List<CsvData> csvDataList)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                foreach (var csvData in csvDataList)
+                {
+                    using (SqlCommand command = new SqlCommand("INSERT INTO YourTableName (Column1, Column2, ..., Column33) " +
+                                                               "VALUES (@Column1, @Column2, ..., @Column33)", connection))
+                    {
+                        command.Parameters.AddWithValue("@Column1", csvData.Column1);
+                        // Diğer parametreler buraya eklenir...
+                        command.Parameters.AddWithValue("@Column33", csvData.Column33);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+    }
+
+    class Program
+    {
+        static void Main()
+        {
+            // CSV dosyasından verileri oku
+            List<CsvData> csvDataList = ReadCsvFile("yourfile.csv");
+
+            // SQL veritabanına yaz
+            CsvDataDal csvDataDal = new CsvDataDal("yourConnectionString");
+            csvDataDal.InsertCsvData(csvDataList);
+        }
+
+        private static List<CsvData> ReadCsvFile(string filePath)
+        {
+            using (var reader = new StreamReader(filePath))
+            using (var csv = new CsvReader(reader))
+            {
+                var records = csv.GetRecords<CsvData>();
+                return new List<CsvData>(records);
+            }
+        }
+    }
+}
